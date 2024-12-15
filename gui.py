@@ -38,6 +38,10 @@ class TextEditorGUI:
 
         self.update_text_display()  # Инициализируем отображение текста
 
+        # Привязка горячих клавиш
+        self.root.bind("<Control-z>", self.undo)  # Ctrl+Z для отмены
+        self.root.bind("<Control-Shift-z>", self.redo)  # Ctrl+Shift+Z для возврата
+
     def add_line(self):
         """Добавление новой строки."""
         new_line = simpledialog.askstring("Добавить строку", "Введите текст новой строки:")
@@ -65,12 +69,12 @@ class TextEditorGUI:
         except ValueError:
             messagebox.showerror("Ошибка", "Неверный индекс.")
 
-    def undo(self):
+    def undo(self, event=None):
         """Отмена последнего действия."""
         self.editor.undo()
         self.update_text_display()
 
-    def redo(self):
+    def redo(self, event=None):
         """Повтор действия (возврат)."""
         self.editor.redo()
         self.update_text_display()
