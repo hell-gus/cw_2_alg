@@ -40,7 +40,7 @@ class TextEditorGUI:
 
         # Привязка горячих клавиш
         self.root.bind("<Control-z>", self.undo)  # Ctrl+Z для отмены
-        self.root.bind("<Control-Shift-z>", self.redo)  # Ctrl+Shift+Z для возврата
+        self.root.bind("<Control-Shift-Z>", self.redo)  # Ctrl+Shift+Z для возврата
 
     def add_line(self):
         """Добавление новой строки."""
