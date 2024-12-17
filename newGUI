@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
-from text_editor_ull import TextEditor  # Импортируем класс TextEditor из текущего файла
+from cw import TextEditor  # Импортируем класс TextEditor из текущего файла
 
 
 class TextEditorGUI:
@@ -36,10 +36,14 @@ class TextEditorGUI:
         self.find_button = tk.Button(self.button_frame, text="Найти строку", command=self.find)
         self.find_button.grid(row=0, column=5, padx=5)
 
+        self.update_text_display()
+
         self.replace_button = tk.Button(self.button_frame, text="Заменить подстроку", command=self.replace)
         self.replace_button.grid(row=0, column=6, padx=5)
 
-        self.update_text_display()  # Инициализируем отображение текста
+        # Привязка горячих клавиш
+        self.root.bind("<Control-z>", self.undo)  # Ctrl+Z для отмены
+        self.root.bind("<Control-Shift-Z>", self.redo)  # Ctrl+Shift+Z для возврата
 
     def add_line(self):
         new_line = simpledialog.askstring("Добавить строку", "Введите текст новой строки:")
@@ -82,13 +86,6 @@ class TextEditorGUI:
             else:
                 messagebox.showinfo("Результаты поиска", "Совпадений не найдено.")
 
-    def replace(self):
-        old_substring = simpledialog.askstring("Заменить подстроку", "Введите подстроку для замены:")
-        new_substring = simpledialog.askstring("Заменить подстроку", "Введите новую подстроку:")
-        if old_substring and new_substring is not None:
-            self.editor.replace(old_substring, new_substring)
-            self.update_text_display()
-
     def update_text_display(self):
         self.text_display.config(state=tk.NORMAL)
         self.text_display.delete(1.0, tk.END)  # Очистка текущего текста
@@ -102,6 +99,12 @@ class TextEditorGUI:
             current_node = current_node.next
         self.text_display.config(state=tk.DISABLED)
 
+    def replace(self):
+        old_substring = simpledialog.askstring("Заменить подстроку", "Введите подстроку для замены:")
+        new_substring = simpledialog.askstring("Заменить подстроку", "Введите новую подстроку:")
+        if old_substring and new_substring is not None:
+            self.editor.replace(old_substring, new_substring)
+            self.update_text_display()
 
 if __name__ == "__main__":
     root = tk.Tk()
