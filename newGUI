@@ -1,0 +1,109 @@
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+from text_editor_ull import TextEditor  # Импортируем класс TextEditor из текущего файла
+
+
+class TextEditorGUI:
+    def __init__(self, root):
+        self.editor = TextEditor(node_capacity=5)
+        self.root = root
+        self.root.title("Текстовый редактор")
+
+        # Основная область для отображения текста
+        self.text_display = tk.Text(root, height=30, width=60, state=tk.DISABLED)
+        self.text_display.pack(padx=10, pady=10)
+
+        # Панель для кнопок
+        self.button_frame = tk.Frame(root)
+        self.button_frame.pack(pady=10)
+
+        # Кнопки
+        self.add_button = tk.Button(self.button_frame, text="Добавить строку", command=self.add_line)
+        self.add_button.grid(row=0, column=0, padx=5)
+
+        self.edit_button = tk.Button(self.button_frame, text="Редактировать строку", command=self.edit_line)
+        self.edit_button.grid(row=0, column=1, padx=5)
+
+        self.delete_button = tk.Button(self.button_frame, text="Удалить строку", command=self.delete_line)
+        self.delete_button.grid(row=0, column=2, padx=5)
+
+        self.undo_button = tk.Button(self.button_frame, text="Отменить действие", command=self.undo)
+        self.undo_button.grid(row=0, column=3, padx=5)
+
+        self.redo_button = tk.Button(self.button_frame, text="Вернуть действие", command=self.redo)
+        self.redo_button.grid(row=0, column=4, padx=5)
+
+        self.find_button = tk.Button(self.button_frame, text="Найти строку", command=self.find)
+        self.find_button.grid(row=0, column=5, padx=5)
+
+        self.replace_button = tk.Button(self.button_frame, text="Заменить подстроку", command=self.replace)
+        self.replace_button.grid(row=0, column=6, padx=5)
+
+        self.update_text_display()  # Инициализируем отображение текста
+
+    def add_line(self):
+        new_line = simpledialog.askstring("Добавить строку", "Введите текст новой строки:")
+        if new_line:
+            self.editor.add_line(new_line)
+            self.update_text_display()
+
+    def edit_line(self):
+        try:
+            index = int(simpledialog.askstring("Редактировать строку", "Введите индекс строки для редактирования:"))
+            new_line = simpledialog.askstring("Редактировать строку", "Введите новый текст строки:")
+            if new_line:
+                self.editor.edit_line(index, new_line)
+                self.update_text_display()
+        except ValueError:
+            messagebox.showerror("Ошибка", "Неверный индекс.")
+
+    def delete_line(self):
+        try:
+            index = int(simpledialog.askstring("Удалить строку", "Введите индекс строки для удаления:"))
+            self.editor.delete_line(index)
+            self.update_text_display()
+        except ValueError:
+            messagebox.showerror("Ошибка", "Неверный индекс.")
+
+    def undo(self):
+        self.editor.undo()
+        self.update_text_display()
+
+    def redo(self):
+        self.editor.redo()
+        self.update_text_display()
+
+    def find(self):
+        substring = simpledialog.askstring("Поиск строки", "Введите подстроку для поиска:")
+        if substring:
+            results = self.editor.find(substring)
+            if results:
+                messagebox.showinfo("Результаты поиска", f"Подстрока найдена в строках: {results}")
+            else:
+                messagebox.showinfo("Результаты поиска", "Совпадений не найдено.")
+
+    def replace(self):
+        old_substring = simpledialog.askstring("Заменить подстроку", "Введите подстроку для замены:")
+        new_substring = simpledialog.askstring("Заменить подстроку", "Введите новую подстроку:")
+        if old_substring and new_substring is not None:
+            self.editor.replace(old_substring, new_substring)
+            self.update_text_display()
+
+    def update_text_display(self):
+        self.text_display.config(state=tk.NORMAL)
+        self.text_display.delete(1.0, tk.END)  # Очистка текущего текста
+        self.editor.display()  # Отображение текста в консоли
+        position = 0
+        current_node = self.editor.text.head
+        while current_node:
+            for line in current_node.lines:
+                self.text_display.insert(tk.END, f"{position}: {line}\n")
+                position += 1
+            current_node = current_node.next
+        self.text_display.config(state=tk.DISABLED)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TextEditorGUI(root)
+    root.mainloop()
