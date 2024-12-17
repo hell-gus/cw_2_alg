@@ -1,0 +1,210 @@
+class Node:
+    """ Узел для Unrolled Linked List. """
+    def __init__(self, capacity):
+        self.lines = []  # Список строк в узле
+        self.next = None  # Ссылка на следующий узел
+        self.capacity = capacity  # Максимальная вместимость узла
+
+    def is_full(self):
+        return len(self.lines) >= self.capacity
+
+    def is_empty(self):
+        return len(self.lines) == 0
+
+
+class UnrolledLinkedList:
+    """ Unrolled Linked List для хранения строк текста. """
+    def __init__(self, node_capacity=5):
+        self.head = Node(node_capacity)
+        self.node_capacity = node_capacity
+
+    def _find_node(self, index):
+        """Находит узел и локальный индекс по глобальному индексу."""
+        current = self.head
+        position = 0
+
+        while current:
+            if position <= index < position + len(current.lines):
+                return current, index - position
+            position += len(current.lines)
+            current = current.next
+
+        raise IndexError("Индекс вне диапазона")
+
+    def add_line(self, line):
+        """Добавляет строку в конец текста."""
+        current = self.head
+        while current.next:
+            current = current.next
+
+        if current.is_full():
+            new_node = Node(self.node_capacity)
+            new_node.lines.append(line)
+            current.next = new_node
+        else:
+            current.lines.append(line)
+
+    def edit_line(self, index, new_line):
+        """Редактирует строку по глобальному индексу."""
+        node, local_index = self._find_node(index)
+        node.lines[local_index] = new_line
+
+    def delete_line(self, index):
+        """Удаляет строку по глобальному индексу."""
+        node, local_index = self._find_node(index)
+        del node.lines[local_index]
+
+        # Удаляем пустой узел, если он стал пустым
+        if node.is_empty() and node != self.head:
+            self._remove_empty_node(node)
+
+    def _remove_empty_node(self, node_to_remove):
+        """Удаляет пустой узел из списка."""
+        prev = self.head
+        while prev.next and prev.next != node_to_remove:
+            prev = prev.next
+        if prev.next == node_to_remove:
+            prev.next = node_to_remove.next
+
+    def get_line(self, index):
+        """Возвращает строку по глобальному индексу."""
+        node, local_index = self._find_node(index)
+        return node.lines[local_index]
+
+    def display(self):
+        """Отображает весь текст."""
+        current = self.head
+        position = 0
+        while current:
+            for line in current.lines:
+                print(f"{position}: {line}")
+                position += 1
+            current = current.next
+
+    def find(self, substring):
+        """Находит индексы строк, содержащих подстроку."""
+        results = []
+        current = self.head
+        position = 0
+
+        while current:
+            for i, line in enumerate(current.lines):
+                if substring in line:
+                    results.append(position + i)
+            position += len(current.lines)
+            current = current.next
+
+        return results
+
+    def replace(self, old_substring, new_substring):
+        """Находит все вхождения подстроки и заменяет их на другую строку."""
+        current = self.head
+        position = 0
+
+        while current:
+            for i, line in enumerate(current.lines):
+                if old_substring in line:
+                    current.lines[i] = line.replace(old_substring, new_substring)
+            position += len(current.lines)
+            current = current.next
+
+    def size(self):
+        """Возвращает количество строк в тексте."""
+        count = 0
+        current = self.head
+        while current:
+            count += len(current.lines)
+            current = current.next
+        return count
+
+
+class TextEditor:
+    def __init__(self, node_capacity=5):
+        self.text = UnrolledLinkedList(node_capacity)
+        self.undo_stack = []
+        self.redo_stack = []
+        self.max_history = 25
+
+    def add_line(self, line):
+        self._add_to_undo(("delete", self.text.size(), line))
+        self.redo_stack.clear()
+        self.text.add_line(line)
+
+    def edit_line(self, index, new_line):
+        try:
+            old_line = self.text.get_line(index)
+            self._add_to_undo(("edit", index, old_line))
+            self.redo_stack.clear()
+            self.text.edit_line(index, new_line)
+        except IndexError:
+            print("Ошибка: Индекс вне диапазона")
+
+    def delete_line(self, index):
+        try:
+            old_line = self.text.get_line(index)
+            self._add_to_undo(("add", index, old_line))
+            self.redo_stack.clear()
+            self.text.delete_line(index)
+        except IndexError:
+            print("Ошибка: Индекс вне диапазона")
+
+    def undo(self):
+        if self.undo_stack:
+            action = self.undo_stack.pop()
+            self.redo_stack.append(action)
+            self._apply_action(action, reverse=True)
+        else:
+            print("Нечего отменять")
+
+    def redo(self):
+        if self.redo_stack:
+            action = self.redo_stack.pop()
+            self.undo_stack.append(action)
+            self._apply_action(action, reverse=False)
+        else:
+            print("Нечего вернуть")
+
+    def _apply_action(self, action, reverse):
+        action_type, index, line = action
+        if action_type == "add":
+            if reverse:
+                self.text.delete_line(index)
+            else:
+                self.text.add_line(line)
+        elif action_type == "delete":
+            if reverse:
+                self.text.add_line(line)
+            else:
+                self.text.delete_line(index)
+        elif action_type == "edit":
+            current_line = self.text.get_line(index)
+            self.text.edit_line(index, line)
+            action = ("edit", index, current_line)
+
+    def _add_to_undo(self, action):
+        if len(self.undo_stack) >= self.max_history:
+            self.undo_stack.pop(0)
+        self.undo_stack.append(action)
+
+    def find(self, substring):
+        return self.text.find(substring)
+
+    def replace(self, old_substring, new_substring):
+        """Находит все вхождения подстроки и заменяет их на другую строку."""
+        self.text.replace(old_substring, new_substring)
+
+    def display(self):
+        self.text.display()
+
+
+# Пример использования
+editor = TextEditor(node_capacity=3)
+editor.add_line("Первая строка")
+editor.add_line("Вторая строка")
+editor.add_line("Третья строка")
+editor.add_line("Четвертая строка")
+editor.add_line("Пятая строка")
+editor.display()
+print("---")
+editor.replace("строка", "линия")
+editor.display()
